@@ -1,7 +1,4 @@
-﻿using JetBrains.Annotations;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -14,15 +11,20 @@ public class PlayerController : MonoBehaviour
     public float runModifier;
     public float jumpForce;
 
-    [Header("Checks")]
+    [Header("Ground Check")]
     public Transform groundTransform;
     public LayerMask groundLayers;
+    public float groundHeight;
 
+    [Header("Component References")]
+    public Animator anim;
+    public GameObject model;
+    private Rigidbody rb;
+
+    // --- Player States --- //
     private PlayerMoveState moveState;
     private PlayerAttackState attackState;
-
-    private Rigidbody rb;
-    public Animator anim;
+    private PlayerStandState standState;
 
     private void Start()
     {
@@ -31,10 +33,10 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        UpdateGround();
         PlayerMovement();
         DampenMovement();
         Jump();
+        UpdateGround();
     }
 
     private void LateUpdate()
@@ -45,12 +47,12 @@ public class PlayerController : MonoBehaviour
     private void PlayerMovement()
     {
         PlayerInput input = GetInput();
-        if (moveState != PlayerMoveState.AIR)
+        if (moveState != PlayerMoveState.JUMP)
         {
             if (input.x != 0 || input.y != 0) moveState = PlayerMoveState.RUN;
             else moveState = PlayerMoveState.IDLE;
         }
-        Vector3 movement = input.y * movementSpeed * transform.forward;
+        Vector3 movement = (input.y * movementSpeed * transform.forward);
         rb.AddForce(movement, ForceMode.VelocityChange);
     }
 
@@ -63,34 +65,44 @@ public class PlayerController : MonoBehaviour
 
     private void Jump()
     {
-        if (moveState == PlayerMoveState.JUMP || moveState == PlayerMoveState.AIR || attackState == PlayerAttackState.SLASH) return;
+        if (standState == PlayerStandState.AIR) return;
         PlayerInput input = GetInput();
         if (!input.jump) return;
+        if (rb.velocity.y > 0) return;
+        if (!Physics.Raycast(groundTransform.position, -transform.up, groundHeight)) return;
         rb.AddForce(jumpForce * transform.up, ForceMode.Impulse);
         moveState = PlayerMoveState.JUMP;
+        anim.Play("Jump");
     }
 
     private void UpdateGround()
     {
-        if (Physics.CheckSphere(groundTransform.position, 0.05f, groundLayers))
+        Vector3 colSize = model.GetComponent<BoxCollider>().size;
+        bool touchingGround = Physics.CheckBox(groundTransform.position, new Vector3(colSize.x/2, groundHeight/2, colSize.z/2), transform.rotation, groundLayers);
+        
+        switch (moveState)
         {
-            switch (moveState)
-            {
-                case PlayerMoveState.IDLE:
-                    break;
-                case PlayerMoveState.RUN:
-                    break;
-                case PlayerMoveState.JUMP:
-                    moveState = PlayerMoveState.IDLE;
-                    break;
-                case PlayerMoveState.AIR:
-                    moveState = PlayerMoveState.IDLE;
-                    break;
-            }
+            case PlayerMoveState.IDLE:
+                if (!touchingGround) moveState = PlayerMoveState.FALLING;
+                break;
+            case PlayerMoveState.RUN:
+                if (!touchingGround) moveState = PlayerMoveState.FALLING;
+                break;
+            case PlayerMoveState.JUMP:
+                if (rb.velocity.y < 0) moveState = PlayerMoveState.FALLING;
+                break;
+            case PlayerMoveState.FALLING:
+                if (touchingGround || rb.velocity.y >= 0) moveState = PlayerMoveState.IDLE;
+                break;
         }
-        else
-        {
-            moveState = PlayerMoveState.AIR;
+
+        switch (standState) {
+            case PlayerStandState.GROUND:
+                if (!touchingGround) standState = PlayerStandState.AIR;
+                break;
+            case PlayerStandState.AIR:
+                if (touchingGround) standState = PlayerStandState.GROUND;
+                break;
         }
     }
 

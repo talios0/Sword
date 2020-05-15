@@ -1,8 +1,9 @@
-﻿public enum PlayerMoveState {
+﻿public enum PlayerMoveState
+{
     IDLE = 0,
     RUN = 1,
     JUMP = 2,
-    AIR = 3
+    FALLING = 3
 }
 
 public enum PlayerAttackState
@@ -10,5 +11,10 @@ public enum PlayerAttackState
     NONE,
     SWORD,
     SLASH
+}
+
+public enum PlayerStandState { 
+    GROUND,
+    AIR
 }
 
