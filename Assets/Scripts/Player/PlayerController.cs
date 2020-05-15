@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -49,10 +50,19 @@ public class PlayerController : MonoBehaviour
         PlayerInput input = GetInput();
         if (moveState != PlayerMoveState.JUMP)
         {
-            if (input.x != 0 || input.y != 0) moveState = PlayerMoveState.RUN;
+            if (input.y != 0) moveState = PlayerMoveState.RUN;
+            else if (input.x != 0)
+            {
+                if (input.y == 0)
+                {
+                    if (input.x > 0) moveState = PlayerMoveState.STRAFE;
+                    else moveState = PlayerMoveState.LEFTSTRAFE;
+                }
+            }
             else moveState = PlayerMoveState.IDLE;
         }
-        Vector3 movement = (input.y * movementSpeed * transform.forward);
+        Vector3 movement = (input.y * movementSpeed * transform.forward) + (input.x * movementSpeed * transform.right);
+        movement = Vector3.ClampMagnitude(movement, movementSpeed);
         rb.AddForce(movement, ForceMode.VelocityChange);
     }
 
@@ -78,25 +88,23 @@ public class PlayerController : MonoBehaviour
     private void UpdateGround()
     {
         Vector3 colSize = model.GetComponent<BoxCollider>().size;
-        bool touchingGround = Physics.CheckBox(groundTransform.position, new Vector3(colSize.x/2, groundHeight/2, colSize.z/2), transform.rotation, groundLayers);
-        
+        bool touchingGround = Physics.CheckBox(groundTransform.position, new Vector3(colSize.x / 2, groundHeight / 2, colSize.z / 2), transform.rotation, groundLayers);
+
         switch (moveState)
         {
-            case PlayerMoveState.IDLE:
-                if (!touchingGround) moveState = PlayerMoveState.FALLING;
-                break;
-            case PlayerMoveState.RUN:
-                if (!touchingGround) moveState = PlayerMoveState.FALLING;
-                break;
             case PlayerMoveState.JUMP:
                 if (rb.velocity.y < 0) moveState = PlayerMoveState.FALLING;
                 break;
             case PlayerMoveState.FALLING:
                 if (touchingGround || rb.velocity.y >= 0) moveState = PlayerMoveState.IDLE;
                 break;
+            default:
+                if (!touchingGround) moveState = PlayerMoveState.FALLING;
+                break;
         }
 
-        switch (standState) {
+        switch (standState)
+        {
             case PlayerStandState.GROUND:
                 if (!touchingGround) standState = PlayerStandState.AIR;
                 break;
