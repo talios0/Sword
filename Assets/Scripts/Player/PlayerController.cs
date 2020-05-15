@@ -128,4 +128,8 @@ public class PlayerController : MonoBehaviour
     {
         anim.SetInteger("MoveState", (int)moveState);
     }
+
+    public PlayerMoveState GetMoveState() {
+        return moveState;
+    }
 }
