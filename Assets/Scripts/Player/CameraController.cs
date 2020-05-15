@@ -6,43 +6,49 @@ public class CameraController : MonoBehaviour
 {
     public float sensitivity;
     public Rigidbody playerRb;
+    public Transform cameraHolder;
+    public Vector2 camClamp;
 
     public float cameraDistance;
     public float interpTime;
 
-    private float rotation;
+    private Vector2 rotation;
 
     private void Start()
     {
+        Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    private void FixedUpdate()
+    private void LateUpdate()
     {
         PlayerCameraInput();
-        FollowPlayer();
+        //FollowPlayer();
 
     }
 
     private void PlayerCameraInput()
     {
-        float x = Input.GetAxis("Mouse X");
-        float y = Input.GetAxis("Mouse Y");
+        float x = Input.GetAxis("Mouse X") * sensitivity;
+        float y = Input.GetAxis("Mouse Y") * sensitivity;
 
-        rotation -= y * sensitivity;
-        rotation = Mathf.Clamp(rotation, -90f, 90f);
+        rotation.x += x;
 
-        transform.localRotation = Quaternion.Euler(rotation, 0, 0);
+        rotation.y -= y;
+        rotation.y = Mathf.Clamp(rotation.y, camClamp.x, camClamp.y);
 
-        playerRb.rotation = Quaternion.Euler(playerRb.rotation.eulerAngles + x * sensitivity * Vector3.up);
+        cameraHolder.rotation = Quaternion.Euler(rotation.y, rotation.x, 0);
+        playerRb.rotation = Quaternion.Euler(0, rotation.x, 0);
+
+        transform.LookAt(cameraHolder);
     }
 
     private void FollowPlayer() {
-        float distance = Mathf.Sqrt(Mathf.Pow(transform.position.x - playerRb.position.x, 2) + Mathf.Pow(transform.position.z - playerRb.position.z, 2));
-        if (distance > cameraDistance) {
-            Vector3 newPos = playerRb.position - transform.forward * cameraDistance;
+        float distance = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(playerRb.position.x, playerRb.position.z));
+        if (distance > cameraDistance || distance < cameraDistance) {
+            Vector3 newPos = (-playerRb.transform.forward * cameraDistance + playerRb.position);
             newPos.y = playerRb.position.y + 2;
-            transform.position = Vector3.Lerp(transform.position, newPos, interpTime);
+            transform.position = newPos;
         }
     }
 

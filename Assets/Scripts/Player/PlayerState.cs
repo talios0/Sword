@@ -1,7 +1,8 @@
 ﻿public enum PlayerMoveState {
-    IDLE,
-    RUN,
-    AIR
+    IDLE = 0,
+    RUN = 1,
+    JUMP = 2,
+    AIR = 3
 }
 
 public enum PlayerAttackState
