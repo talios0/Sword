@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Component References")]
     public Animator anim;
+    public Animator swordAnim;
     public GameObject model;
     private Rigidbody rb;
 
@@ -38,6 +39,8 @@ public class PlayerController : MonoBehaviour
         DampenMovement();
         Jump();
         UpdateGround();
+
+        Attack();
     }
 
     private void LateUpdate()
@@ -61,8 +64,9 @@ public class PlayerController : MonoBehaviour
             }
             else moveState = PlayerMoveState.IDLE;
         }
-        Vector3 movement = (input.y * movementSpeed * transform.forward) + (input.x * movementSpeed * transform.right);
-        movement = Vector3.ClampMagnitude(movement, movementSpeed);
+        float speed = input.y == 1 ? movementSpeed * runModifier : movementSpeed;
+        Vector3 movement = (input.y * speed * transform.forward) + (input.x * movementSpeed * runModifier * transform.right);
+        movement = Vector3.ClampMagnitude(movement, movementSpeed*runModifier);
         rb.AddForce(movement, ForceMode.VelocityChange);
     }
 
@@ -114,12 +118,27 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void Attack() {
+        PlayerInput input = GetInput();
+        switch (attackState) {
+            case PlayerAttackState.NONE:
+                if (input.attack) attackState = PlayerAttackState.SLASH;
+                break;
+            case PlayerAttackState.SLASH:
+                if (input.attack) attackState = PlayerAttackState.SWORD;
+                break;
+            case PlayerAttackState.SWORD:
+                break;
+        }
+    }
+
     private PlayerInput GetInput()
     {
         PlayerInput p = new PlayerInput();
         p.x = (int)Input.GetAxisRaw("Horizontal");
         p.y = (int)Input.GetAxisRaw("Vertical");
         p.jump = false;
+        p.attack = Input.GetAxisRaw("Fire1") != 0 ? true : false;
         if (Input.GetAxisRaw("Jump") != 0) p.jump = true;
         return p;
     }
@@ -127,9 +146,16 @@ public class PlayerController : MonoBehaviour
     private void UpdateAnimations()
     {
         anim.SetInteger("MoveState", (int)moveState);
+        anim.SetInteger("AttackState", (int)attackState);
+        anim.SetInteger("MoveDir", GetInput().y);
+        swordAnim.SetInteger("AttackState", (int)attackState);
     }
 
     public PlayerMoveState GetMoveState() {
         return moveState;
+    }
+
+    public PlayerStandState GetStandState() {
+        return standState;
     }
 }

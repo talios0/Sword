@@ -11,9 +11,9 @@
 
 public enum PlayerAttackState
 {
-    NONE,
-    SWORD,
-    SLASH
+    NONE = 0,
+    SWORD = 1,
+    SLASH = 2
 }
 
 public enum PlayerStandState { 
