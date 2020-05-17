@@ -39,12 +39,12 @@ public class PlayerController : MonoBehaviour
         DampenMovement();
         Jump();
         UpdateGround();
-
-        Attack();
     }
 
     private void LateUpdate()
     {
+
+        Attack();
         UpdateAnimations();
     }
 
@@ -122,12 +122,13 @@ public class PlayerController : MonoBehaviour
         PlayerInput input = GetInput();
         switch (attackState) {
             case PlayerAttackState.NONE:
-                if (input.attack) attackState = PlayerAttackState.SLASH;
-                break;
-            case PlayerAttackState.SLASH:
                 if (input.attack) attackState = PlayerAttackState.SWORD;
                 break;
+            case PlayerAttackState.SLASH:
+                attackState = PlayerAttackState.SWORD;
+                break;
             case PlayerAttackState.SWORD:
+                if (input.attack) attackState = PlayerAttackState.SLASH;
                 break;
         }
     }
